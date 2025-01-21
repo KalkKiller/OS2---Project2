@@ -1,0 +1,62 @@
+---
+- name: Setup Raspberry Pi
+  hosts: raspberrypi
+  become: true
+
+  tasks:
+    - name: Update en upgrade apt-pakketten
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Installeer Node.js en npm
+      apt:
+        name: nodejs, npm
+        state: present
+
+    - name: Installeer Node-RED via npm
+      npm:
+        name: node-red
+        global: yes
+
+    - name: Installeer Node-RED als een systeemdienst
+      copy:
+        dest: /etc/systemd/system/nodered.service
+        content: |
+          [Unit]
+          Description=Node-RED
+          After=network.target
+
+          [Service]
+          ExecStart=/usr/bin/node-red
+          Restart=on-failure
+          User=pi
+          Group=pi
+
+          [Install]
+          WantedBy=multi-user.target
+      notify: 
+        - Enable Node-RED Service
+
+    - name: Start Node-RED
+      systemd:
+        name: nodered
+        state: started
+        enabled: yes
+
+    - name: Installeer Python en pip
+      apt:
+        name: python3, python3-pip
+        state: present
+
+    - name: Installeer benodigde Python-pakketten voor sensor data verwerking
+      pip:
+        name: requests
+        state: present
+
+  handlers:
+    - name: Enable Node-RED Service
+      systemd:
+        name: nodered
+        state: restarted
+        enabled: yes

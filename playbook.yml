@@ -1,5 +1,6 @@
 ---
 - name: Setup Raspberry Pi
+  hosts: raspberrypi
   become: true
 
   tasks:

@@ -34,15 +34,16 @@
           After=network.target
 
           [Service]
-          Environment="PATH=/usr/bin:/usr/local/bin"
-          ExecStart=/usr/local/bin/node-red-pi --max-old-space-size=128
-          WorkingDirectory=/home/pi
-          User=pi
-          Group=pi
+          ExecStart=/usr/bin/env node-red --userDir /home/tsml/.node-red
+          WorkingDirectory=/home/tsml
+          User=tsml
+          Group=tsml
+          Environment="NODE_OPTIONS=--max-old-space-size=128"
           Nice=10
           SyslogIdentifier=Node-RED
           StandardOutput=syslog
           Restart=on-failure
+          PermissionsStartOnly=true
 
           [Install]
           WantedBy=multi-user.target

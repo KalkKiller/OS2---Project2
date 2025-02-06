@@ -1,6 +1,5 @@
----
 - name: Setup Raspberry Pi
-  hosts: raspberrypi
+  hosts: myhosts
   become: true
 
   tasks:
@@ -9,17 +8,24 @@
         update_cache: yes
         upgrade: dist
 
-    - name: Installeer Node.js en npm
+    - name: Installeer build-essential tools
       apt:
-        name: nodejs, npm
+        name: build-essential
         state: present
 
+    - name: Installeer Node.js en npm
+      apt:
+        name:
+          - nodejs
+          - npm
+        state: present
+  
     - name: Installeer Node-RED via npm
       npm:
         name: node-red
         global: yes
 
-    - name: Installeer Node-RED als een systeemdienst
+    - name: Maak systemd service bestand voor Node-RED
       copy:
         dest: /etc/systemd/system/nodered.service
         content: |
@@ -28,34 +34,35 @@
           After=network.target
 
           [Service]
-          ExecStart=/usr/bin/node-red
-          Restart=on-failure
+          Environment="PATH=/usr/bin:/usr/local/bin"
+          ExecStart=/usr/local/bin/node-red-pi --max-old-space-size=128
+          WorkingDirectory=/home/pi
           User=pi
           Group=pi
+          Nice=10
+          SyslogIdentifier=Node-RED
+          StandardOutput=syslog
+          Restart=on-failure
 
           [Install]
           WantedBy=multi-user.target
-      notify: 
-        - Enable Node-RED Service
-
-    - name: Start Node-RED
-      systemd:
-        name: nodered
-        state: started
-        enabled: yes
+      notify:
+        - Reload systemd daemon
+        - Restart Node-RED Service
 
     - name: Installeer Python en pip
       apt:
-        name: python3, python3-pip
-        state: present
-
-    - name: Installeer benodigde Python-pakketten voor sensor data verwerking
-      pip:
-        name: requests
+        name:
+          - python3
+          - python3-pip
         state: present
 
   handlers:
-    - name: Enable Node-RED Service
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: true
+
+    - name: Restart Node-RED Service
       systemd:
         name: nodered
         state: restarted
